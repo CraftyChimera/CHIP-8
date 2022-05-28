@@ -4,12 +4,14 @@ void UpdatePixel(sf::Texture &texture, byte x, byte y, byte n, vector<byte> data
 {
     sf::Image image = texture.copyToImage();
     sf::Color w = sf::Color::White, b = sf::Color::Black;
-    byte v_x = x & 63, v_y = y & 31;
+    byte v_x = x & (0x40 - 1), v_y = y & (0x20 - 1);
     for (int i = 0; i < n; i++)
     {
         int step = 0, mark = 1 << 8;
         while (mark > 0)
         {
+            if (v_x + step >= 0x40)
+                break;
             if ((mark & data[i]) > 0)
             {
                 if (image.getPixel(v_x + step, v_y) == w)
@@ -22,6 +24,8 @@ void UpdatePixel(sf::Texture &texture, byte x, byte y, byte n, vector<byte> data
             mark = mark >> 1;
         }
         v_y++;
+        if (v_y >= 0x20)
+            break;
     }
     texture.update(image);
 };
