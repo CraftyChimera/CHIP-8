@@ -6,10 +6,13 @@ struct CPU
     array<byte, 0x1000> ram;
     word pc, I;
     stack<word> Stack;
-    byte delay, sound;
+    int delay, sound;
     array<byte, 0x10> V;
+    vector<word> instruction_list;
     CPU();
 
+    void Get_Key(word, byte);
+    void Dec_Timer();
     void Load_Data(vector<byte>);
     void Clear_Screen(sf::RenderWindow &);
     void Jump(word);
@@ -28,4 +31,5 @@ struct CPU
     void Store_and_Load(word);
     void BCD(word);
     void Font(word);
+    void Debug();
 };

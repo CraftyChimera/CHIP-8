@@ -6,6 +6,11 @@ constexpr byte extractX(word a)
     return (a >> 8) & (0xF);
 }
 
+constexpr int max(int a, int b)
+{
+    return (a > b) ? a : b;
+}
+
 CPU::CPU()
 {
     vector<byte> font_data = {
@@ -35,6 +40,41 @@ CPU::CPU()
     for (int i = 0; i <= 0x40; i++)
         ram[0x50 + i] = font_data[i];
 }
+
+void CPU::Dec_Timer()
+{
+    delay = max(delay - 1, 0);
+    sound = max(sound - 1, 0);
+}
+
+void CPU::Get_Key(word a, byte b)
+{
+    byte regX = extractX(a);
+    V[regX] = b;
+}
+
+void CPU::Debug()
+{
+    word x = (ram[pc] << 8) + ram[pc + 1];
+    instruction_list.push_back(x);
+    if (instruction_list.size() > 8)
+        instruction_list = vector<word>(instruction_list.begin() + 1, instruction_list.end());
+    std::cout << "Instructions\t";
+    for (auto y : instruction_list)
+        std::cout << y << " ";
+    std::cout << "\n";
+    for (int t = 0; t < 4; t++)
+    {
+        for (int i = 4 * t; i < 4 * (t + 1); i++)
+            std::cout << std::hex << "V" << i << ": " << (int)V[i] << "\t";
+        std::cout << "\n";
+    }
+    std::cout << "I: " << I << "\n";
+    std::cout << "Delay: " << (int)delay << "\n";
+    std::cout << "Sound: " << (int)sound << "\n";
+    std::cout << "\n\n\n\n\n";
+}
+
 void CPU::Load_Data(vector<byte> data)
 {
     for (size_t i = 0; i < data.size(); i++)
@@ -79,6 +119,7 @@ void CPU::Set_Index(word a)
 void CPU::Add_Index(word a)
 {
     byte reg = extractX(a);
+    V[0xF] = 0;
     if (I + V[reg] >= 0x1000)
         V[0xF] = 1;
     I = (I + V[0xF]) & 0xFFF;
@@ -88,7 +129,7 @@ void CPU::Random(word a)
 {
     std::random_device rd;
     std::mt19937 rng(rd());
-    std::uniform_int_distribution<word> uni(0, 0x1000);
+    std::uniform_int_distribution<word> uni(0, 0x100);
     word random_integer = uni(rng);
     byte value = (a & 0xFF), reg = extractX(a);
     V[reg] = value & random_integer;
@@ -105,7 +146,7 @@ void CPU::Draw(word a, sf::RenderWindow &window, sf::Texture &texture)
     y = V[regY];
     x = V[regX];
     vector<byte> data(ram.begin() + I, ram.begin() + I + n);
-    UpdatePixel(texture, x, y, n, data);
+    V[0xF] = UpdatePixel(texture, x, y, n, data);
     DrawWindow(window, texture);
 }
 
@@ -121,32 +162,36 @@ void CPU::Sub(word a)
     Jump(a);
 }
 
-void CPU::Skip(word a) // To be Done
+void CPU::Skip(word a)
 {
-    byte value = a & 0xFF;
-    a >>= 4;
-    byte regY = a & 0xF;
-    a >>= 4;
-    byte regX = a & 0xF;
-    a >>= 4;
-    byte first = a;
-    if (first == 3)
-        pc += ((V[regX] == value) * 2);
-    if (first == 4)
-        pc += ((V[regX] != value) * 2);
-    if (first == 5)
-        pc += ((V[regX] == V[regY]) * 2);
-    if (first == 9)
-        pc += ((V[regX] != V[regY]) * 2);
+    byte first = a >> 12;
+    byte regX = extractX(a);
+
+    if (first == 3 || first == 4)
+    {
+        byte value = a & 0xFF;
+        if (first == 3)
+            pc += ((V[regX] == value) * 2);
+        if (first == 4)
+            pc += ((V[regX] != value) * 2);
+        return;
+    }
+
+    if ((a & 0xF) == 0)
+    {
+        byte regY = (a >> 4) & 0xF;
+        if (first == 5)
+            pc += ((V[regX] == V[regY]) * 2);
+        if (first == 9)
+            pc += ((V[regX] != V[regY]) * 2);
+    }
 }
 
 void CPU::Arithmetic(word a)
 {
     byte op = a & 0xF;
-    a >>= 4;
-    byte regY = a & 0xF;
-    a >>= 4;
-    byte regX = a & 0xF;
+    byte regY = (a >> 4) & 0xF;
+    byte regX = extractX(a);
     if (op == 0)
         V[regX] = V[regY];
     if (op == 1)
@@ -185,43 +230,44 @@ void CPU::Arithmetic(word a)
     }
     if (op == 0xe) // problematic
     {
-        V[0xF] = 0;
+        byte MSB = V[regX] >> 7;
+        V[0xF] = MSB;
         V[regX] <<= 1;
     }
 }
 
 void CPU::Skip_Key(word a, byte b)
 {
-    byte op = a & 0xF;
+    byte op = a & 0xFF;
     byte regX = extractX(a);
-    if (op == 0xe)
+    if (op == 0x9e)
         pc += ((V[regX] == b) * 2);
-    if (op == 0x1)
+    if (op == 0xa1)
         pc += ((V[regX] != b) * 2);
 }
 
 void CPU::Timer(word a)
 {
-    byte op = a & 0xF;
+    byte op = a & 0xFF;
     byte regX = extractX(a);
-    if (op == 7)
+    if (op == 0x07)
         V[regX] = delay;
-    if (op == 5)
+    if (op == 0x15)
         delay = V[regX];
-    if (op == 8)
+    if (op == 0x18)
         sound = V[regX];
 }
 
 void CPU::Store_and_Load(word a) // problematic
 {
-    byte op = (a >> 4) & 0xF;
+    byte op = a & 0xFF;
     byte reg = extractX(a);
-    if (op == 5)
+    if (op == 0x55)
     {
         for (byte i = 0; i <= reg; i++)
             ram[I + i] = V[i];
     }
-    if (op == 6)
+    if (op == 0x65)
     {
         for (byte i = 0; i <= reg; i++)
             V[i] = ram[I + i];
@@ -231,15 +277,8 @@ void CPU::Store_and_Load(word a) // problematic
 void CPU::BCD(word a)
 {
     byte reg = extractX(a);
-    word digit = 0, value = V[reg], x = value;
-    while (x > 0)
-    {
-        x /= 10;
-        digit++;
-    }
-    if (value == 0)
-        digit = 1;
-    for (int i = digit - 1; i >= 0; i--)
+    word value = V[reg];
+    for (int i = 2; i >= 0; i--)
     {
         ram[I + i] = value % 10;
         value /= 10;
