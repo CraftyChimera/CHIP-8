@@ -2,7 +2,7 @@
 
 int main()
 {
-    std::string_view s = "tests/pong.rom";
+    std::string_view s = "tests/tetris.rom";
     CPU cpu;
     vector<byte> data = read_file(s);
     byte read_byte = 0;
@@ -21,7 +21,7 @@ int main()
     {
         window.clear(sf::Color::Black);
         sf::Event event;
-        int speed = 100;
+        int speed = 4000;
         int fake = 0;
         bool pressed = false;
         sf::Clock clock;

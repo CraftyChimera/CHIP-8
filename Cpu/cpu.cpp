@@ -122,7 +122,7 @@ void CPU::Add_Index(word a)
     V[0xF] = 0;
     if (I + V[reg] >= 0x1000)
         V[0xF] = 1;
-    I = (I + V[0xF]) & 0xFFF;
+    I = (I + V[reg]) & 0xFFF;
 }
 
 void CPU::Random(word a)
@@ -289,5 +289,5 @@ void CPU::Font(word a)
 {
     byte reg = extractX(a);
     byte ch = (V[reg]) & 0xF;
-    I = 0x40 + (ch * 5);
+    I = 0x50 + (ch * 5);
 }
