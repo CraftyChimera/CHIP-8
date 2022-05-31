@@ -23,13 +23,13 @@ bool UpdatePixel(sf::Texture &texture, byte x, byte y, byte n, vector<byte> data
                     image.setPixel((v_x + step), v_y, w);
             }
             step++;
-            if (v_x + step >= 0x40)
+            if (v_x + step > 0x40)
                 break;
 
             mark = mark >> 1;
         }
         v_y++;
-        if (v_y >= 0x20)
+        if (v_y > 0x20)
             break;
     }
     texture.update(image);

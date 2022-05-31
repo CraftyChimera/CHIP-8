@@ -1,7 +1,7 @@
 flags=-lsfml-graphics -lsfml-window -lsfml-system -Wall -Wextra -Wshadow -pedantic
 
 all: cpu base graphics
-	g++ -o main main.cpp cpu.o base.o graphics.o $(flags)
+	g++ -o main main.cpp cpu.o base.o graphics.o $(flags) -lsfml-audio && rm *.o
 
 base: Base/base.cpp Base/base.hpp
 	g++ Base/base.cpp -c -o base.o $(flags)

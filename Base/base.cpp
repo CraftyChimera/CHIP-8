@@ -2,10 +2,10 @@
 #include <fstream>
 using std::string;
 
-vector<byte> read_file(std::string_view path)
+vector<byte> read_file(std::string path)
 {
     constexpr auto read_size = std::size_t(4096);
-    auto stream = std::ifstream(path.data());
+    auto stream = std::ifstream(path);
     stream.exceptions(std::ios_base::badbit);
 
     vector<byte> out;

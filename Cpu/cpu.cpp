@@ -6,11 +6,6 @@ constexpr byte extractX(word a)
     return (a >> 8) & (0xF);
 }
 
-constexpr int max(int a, int b)
-{
-    return (a > b) ? a : b;
-}
-
 CPU::CPU()
 {
     vector<byte> font_data = {
@@ -43,8 +38,10 @@ CPU::CPU()
 
 void CPU::Dec_Timer()
 {
-    delay = max(delay - 1, 0);
-    sound = max(sound - 1, 0);
+    if (delay > 0)
+        delay--;
+    if (sound > 0)
+        sound--;
 }
 
 void CPU::Get_Key(word a, byte b)

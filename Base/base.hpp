@@ -1,6 +1,7 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include <SFML/Audio.hpp>
 #include <array>
 #include <vector>
 #include <stack>
@@ -10,4 +11,4 @@ using std::array;
 using std::stack;
 using std::vector;
 
-vector<byte> read_file(std::string_view);
+vector<byte> read_file(std::string);
