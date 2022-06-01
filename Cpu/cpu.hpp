@@ -14,7 +14,7 @@ struct CPU
     void Get_Key(word, byte);
     void Dec_Timer();
     void Load_Data(vector<byte>);
-    void Clear_Screen(sf::RenderWindow &);
+    void Clear_Screen(sf::RenderWindow &, sf::Texture &);
     void Jump(word);
     void Jump_Offset(word);
     void Set_Register(word);

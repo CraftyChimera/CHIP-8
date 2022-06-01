@@ -7,7 +7,7 @@ int main(int argc, char **argv)
         std::cout << "Usage './main arg1' \n";
         return 0;
     }
-    std::string path = "tests/", name(argv[1]);
+    std::string path = "roms/", name(argv[1]);
     path += name;
     CPU cpu;
     vector<byte> data = read_file(path);
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     {
         window.clear(sf::Color::Black);
         sf::Event event;
-        int speed = 2;
+        double frequency = 540; // Assuming the system runs at 540 hz here
         int cycle_count = 0;
         bool pressed = false;
         sf::Clock clock;
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
             case 0x0:
             {
                 if (instruction == 0x00e0)
-                    cpu.Clear_Screen(window);
+                    cpu.Clear_Screen(window, texture);
                 if (instruction == 0x00ee)
                     cpu.Sub(instruction);
                 break;
@@ -308,7 +308,7 @@ int main(int argc, char **argv)
                 break;
             }
             }
-            sf::Time need = sf::milliseconds(speed) - clock.getElapsedTime();
+            sf::Time need = sf::seconds(1 / frequency) - clock.getElapsedTime();
             sf::Clock clock2;
             while (clock2.getElapsedTime() < need)
                 ;

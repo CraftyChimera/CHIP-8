@@ -78,9 +78,12 @@ void CPU::Load_Data(vector<byte> data)
         ram[pc + i] = data[i];
 }
 
-void CPU::Clear_Screen(sf::RenderWindow &window)
+void CPU::Clear_Screen(sf::RenderWindow &window, sf::Texture &texture)
 {
-    window.clear(sf::Color::Black);
+    sf::Image blank_screen;
+    blank_screen.create(65, 32);
+    texture.update(blank_screen);
+    DrawWindow(window, texture);
 }
 
 void CPU::Jump(word a)
