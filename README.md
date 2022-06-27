@@ -4,7 +4,7 @@ A CHIP-8 interpreter written in C++
 
 ## Prerequisites
 
-SFML and cmake are required for this project.<br/>Install them using
+SFML and Make are required for this project.<br/>Install them using
 
 ```bash
 sudo apt-get install libsfml-dev make
@@ -16,12 +16,12 @@ Place your rom in roms/ folder. Then You can run the rom using
 
 ```bash
 make all
-./main (rom)
+./Chip-8 (rom)
 ```
 For example to play Pong,run
 ```bash
 make all
-./main Pong.ch8
+./Chip-8 Pong.ch8
 ```
 
 ## Keyboard Mapping:
