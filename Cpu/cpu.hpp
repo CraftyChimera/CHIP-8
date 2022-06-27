@@ -1,19 +1,17 @@
 #include "../Base/base.hpp"
 #include "../Graphics/graphics.hpp"
 
-struct CPU
+class CPU
 {
-    array<byte, 0x1000> ram;
-    word pc, I;
-    stack<word> Stack;
-    int delay, sound;
-    array<byte, 0x10> V;
+    word I, pc;
+    std::array<byte, 0x1000> ram;
+    std::stack<word> Stack;
+    int delay_t, sound_t;
+    std::array<byte, 0x10> V;
     vector<word> instruction_list;
-    CPU();
-
+    
     void Get_Key(word, byte);
     void Dec_Timer();
-    void Load_Data(vector<byte>);
     void Clear_Screen(sf::RenderWindow &, sf::Texture &);
     void Jump(word);
     void Jump_Offset(word);
@@ -32,4 +30,10 @@ struct CPU
     void BCD(word);
     void Font(word);
     void Debug();
+    void Decode_and_Execute(word, sf::RenderWindow &, sf::Texture &, byte, bool);
+
+public:
+    CPU();
+    void Run(double);
+    void Load_Data(vector<byte>);
 };

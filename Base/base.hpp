@@ -5,10 +5,9 @@
 #include <array>
 #include <vector>
 #include <stack>
-typedef unsigned char byte;
-typedef unsigned short word;
-using std::array;
-using std::stack;
+typedef uint8_t byte;
+typedef uint16_t word;
 using std::vector;
 
 vector<byte> read_file(std::string);
+byte getKeyPressed(sf::Uint32, bool &);

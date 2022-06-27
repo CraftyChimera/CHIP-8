@@ -29,8 +29,8 @@ CPU::CPU()
     ram.fill(0);
     pc = 0x200;
     I = 0x0;
-    delay = 0x0;
-    sound = 0x0;
+    delay_t = 0x0;
+    sound_t = 0x0;
     V.fill(0);
     for (int i = 0; i <= 0x40; i++)
         ram[0x50 + i] = font_data[i];
@@ -38,10 +38,10 @@ CPU::CPU()
 
 void CPU::Dec_Timer()
 {
-    if (delay > 0)
-        delay--;
-    if (sound > 0)
-        sound--;
+    if (delay_t > 0)
+        delay_t--;
+    if (sound_t > 0)
+        sound_t--;
 }
 
 void CPU::Get_Key(word a, byte b)
@@ -67,8 +67,8 @@ void CPU::Debug()
         std::cout << "\n";
     }
     std::cout << "I: " << I << "\n";
-    std::cout << "Delay: " << (int)delay << "\n";
-    std::cout << "Sound: " << (int)sound << "\n";
+    std::cout << "Delay_t: " << (int)delay_t << "\n";
+    std::cout << "Sound: " << (int)sound_t << "\n";
     std::cout << "\n\n\n\n\n";
 }
 
@@ -251,11 +251,11 @@ void CPU::Timer(word a)
     byte op = a & 0xFF;
     byte regX = extractX(a);
     if (op == 0x07)
-        V[regX] = delay;
+        V[regX] = delay_t;
     if (op == 0x15)
-        delay = V[regX];
+        delay_t = V[regX];
     if (op == 0x18)
-        sound = V[regX];
+        sound_t = V[regX];
 }
 
 void CPU::Store_and_Load(word a) // problematic
@@ -290,4 +290,235 @@ void CPU::Font(word a)
     byte reg = extractX(a);
     byte ch = (V[reg]) & 0xF;
     I = 0x50 + (ch * 5);
+}
+
+void CPU::Run(double frequency = 540.0)
+{
+    sf::RenderWindow window(sf::VideoMode(65, 32), "CHIP-8");
+    sf::Texture texture;
+
+    if (!texture.loadFromFile("assets/in.png"))
+    {
+        std::cout << "error Loading the file\n";
+        return;
+    };
+    sf::SoundBuffer buffer;
+
+    if (!buffer.loadFromFile("assets/beep.wav"))
+    {
+        std::cout << "error Loading the file\n";
+        return;
+    }
+
+    sf::Sound sound;
+    sound.setBuffer(buffer);
+    window.setPosition(sf::Vector2i(200, 300));
+
+    while (window.isOpen())
+    {
+        window.clear(sf::Color::Black);
+        sf::Event event;
+        int cycle_count = 0;
+        bool pressed = false, open = true;
+        byte read_byte = 0;
+        sf::Clock clock;
+        while (open)
+        {
+            DrawWindow(window, texture);
+            clock.restart();
+            while (window.pollEvent(event))
+            {
+                pressed = false;
+                switch (event.type)
+                {
+                case sf::Event::TextEntered:
+                {
+                    pressed = true;
+                    read_byte = getKeyPressed(event.text.unicode, pressed);
+                    break;
+                }
+                case sf::Event::Closed:
+                {
+                    open = false;
+                    window.close();
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+
+            word instruction = 0x0000;
+            // Debug();
+            word part1 = ram[pc] << 8, part2 = ram[pc + 1];
+            instruction = part1 + part2;
+            pc += 2;
+            Decode_and_Execute(instruction, window, texture, read_byte, pressed);
+            if (cycle_count == 0)
+            {
+                Dec_Timer();
+                if (sound_t > 0)
+                {
+                    sound.play();
+                }
+            }
+
+            cycle_count = (cycle_count + 1) % 9; // timers decrement at 60 hz while the main CPU runs at approximately 540 hz
+            sf::Time need = sf::seconds(1 / frequency) - clock.getElapsedTime();
+            sleep(need);
+        }
+    }
+}
+
+void CPU::Decode_and_Execute(word instruction, sf::RenderWindow &window, sf::Texture &texture, byte read_byte, bool pressed)
+{
+    byte first = (instruction >> 12);
+
+    switch (first)
+    {
+    case 0x0:
+    {
+        if (instruction == 0x00e0)
+            Clear_Screen(window, texture);
+        if (instruction == 0x00ee)
+            Sub(instruction);
+        return;
+    }
+
+    case 0x1:
+    {
+        Jump(instruction);
+        return;
+    }
+
+    case 0x2:
+    {
+        Sub(instruction);
+        return;
+    }
+
+    case 0x3:
+    case 0x4:
+    case 0x5:
+    case 0x9:
+    {
+        Skip(instruction);
+        return;
+    }
+
+    case 0x6:
+    {
+        Set_Register(instruction);
+        return;
+    }
+
+    case 0x7:
+    {
+        Add_Register(instruction);
+        return;
+    }
+
+    case 0x8:
+    {
+        Arithmetic(instruction);
+        return;
+    }
+
+    case 0xA:
+    {
+        Set_Index(instruction);
+        return;
+    }
+
+    case 0xB:
+    {
+        Jump_Offset(instruction);
+        return;
+    }
+
+    case 0xC:
+    {
+        Random(instruction);
+        return;
+    }
+
+    case 0xD:
+    {
+        Draw(instruction, window, texture);
+        return;
+    }
+
+    case 0xE:
+    {
+        byte op = instruction & 0xFF;
+        if (op == 0x9e)
+        {
+            if (pressed)
+                Skip_Key(instruction, read_byte);
+        }
+        if (op == 0xa1)
+        {
+            if (pressed)
+                Skip_Key(instruction, read_byte);
+            else
+                pc += 2;
+        }
+        return;
+    }
+
+    case 0xF:
+    {
+        byte value = instruction & 0xFF;
+        switch (value)
+        {
+
+        case 0x0a:
+        {
+            if (!pressed)
+                pc -= 2;
+            else
+            {
+                Get_Key(instruction, read_byte);
+            }
+            return;
+        }
+
+        case 0x1e:
+        {
+            Add_Index(instruction);
+            return;
+        }
+
+        case 0x07:
+        case 0x15:
+        case 0x18:
+        {
+            Timer(instruction);
+            return;
+        }
+
+        case 0x29:
+        {
+            Font(instruction);
+            return;
+        }
+
+        case 0x33:
+        {
+            BCD(instruction);
+            return;
+        }
+
+        case 0x55:
+        case 0x65:
+        {
+            Store_and_Load(instruction);
+            return;
+        }
+
+        default:
+            return;
+        }
+    }
+    }
 }
